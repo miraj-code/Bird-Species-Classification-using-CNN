@@ -1,12 +1,15 @@
-import cv2
-from pathlib import Path
-from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 from tqdm import tqdm
+import cv2
+from pathlib import Path
 
-from model import model
+from model import ConvolutionalNeuralModel
+
+# Check if GPU is available and use it
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class CustomDataset(Dataset):
     def __init__(self, data_path, transform=None):
@@ -46,6 +49,10 @@ test_dataset = CustomDataset(test_data_path, transform=transformer)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
+# Define model (assuming ConvolutionalNeuralModel class is already defined)
+model = ConvolutionalNeuralModel().to(device)
+
+# Define loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
@@ -54,6 +61,8 @@ def process_batch(model, data_loader, criterion, optimizer=None):
     total_loss = 0.0
 
     for X, y in data_loader:
+        X, y = X.to(device), y.to(device)
+
         if optimizer:
             model.train()
             optimizer.zero_grad()
@@ -72,6 +81,7 @@ def process_batch(model, data_loader, criterion, optimizer=None):
 
     return total_correct, total_loss / len(data_loader.dataset)
 
+# Training loop
 epochs = 5
 train_correct = []
 test_correct = []
